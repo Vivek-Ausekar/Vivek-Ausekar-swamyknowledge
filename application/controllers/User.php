@@ -10,70 +10,7 @@ class User extends CI_Controller {
         parent::__construct();
     }
 
-    function getAuthorizationCode() {
-        $params = array('response_type' => 'code',
-            'client_id' => API_KEY,
-            'scope' => SCOPE,
-            'state' => uniqid('', true), // unique long string
-            'redirect_uri' => REDIRECT_URI,
-        );
-        // Authentication request
-        $url = 'https://www.linkedin.com/uas/oauth2/authorization?' . http_build_query($params);
-
-        // Needed to identify request when it returns to us
-        $_SESSION['state'] = $params['state'];
-        // Redirect user to authenticate
-        header("Location: $url");
-        exit;
-    }
-
-    public function getAccessToken() {
-        $params = array('grant_type' => 'authorization_code',
-            'client_id' => API_KEY,
-            'client_secret' => API_SECRET,
-            'code' => $_GET['code'],
-            'redirect_uri' => REDIRECT_URI,
-        );
-
-        // Access Token request
-        $url = 'https://www.linkedin.com/uas/oauth2/accessToken?' . http_build_query($params);
-
-        // Tell streams to make a POST request
-        $context = stream_context_create(
-                array('http' =>
-                    array('method' => 'POST',
-                    )
-                )
-        );
-        // Retrieve access token information
-        $response = file_get_contents($url, false, $context);
-        // Native PHP object, please
-        $token = json_decode($response);
-        // Store access token and expiration time
-        $_SESSION['access_token'] = $token->access_token; // guard this! 
-        $_SESSION['expires_in'] = $token->expires_in; // relative time (in seconds)
-        $_SESSION['expires_at'] = time() + $_SESSION['expires_in']; // absolute time
-
-        return true;
-    }
-
-    function fetch($method, $resource, $body = '') {
-
-        $params = array('oauth2_access_token' => $_SESSION['access_token'],
-            'format' => 'json',
-        );
-        $url = 'https://www.linkedin.com' . $resource . '?' . http_build_query($params);
-        $context = stream_context_create(
-                array('http' =>
-                    array('method' => $method,
-                    )
-                )
-        );
-        $response = file_get_contents($url, false, $context);
-        return json_decode($response);
-    }
-
-    public function index() {
+    function index() {
 
         if (NULL != $_GET && NULL != $_GET['state'] && NULL != $_GET['code']) {
 
@@ -126,7 +63,7 @@ class User extends CI_Controller {
                 $queryInsertSocialMediaLogin = array(
                     'social_media_type_id' => '3',
                     'social_media_user_id' => $user->id,
-                    'social_media_username' => $user->firstName .' '. $user->lastName,
+                    'social_media_username' => $user->firstName . ' ' . $user->lastName,
                     'access_token' => $_GET['code'],
                     //'status' => $_POST['status'],
                     'created_by' => '1',
@@ -142,11 +79,11 @@ class User extends CI_Controller {
                 //Insert data in user_registrations on login using LinkedIn
                 $queryInsertUserRegistrations = array(
                     'social_media_login_id' => $socialMediaInsertId,
-                    'username' => $user->firstName . $user->lastName,
+                    'name' => $user->firstName . ' ' . $user->lastName,
 //                                'password'  ,
-                    'firstname' => $user->firstName,
+//                    'firstname' => $user->firstName,
 //                                'middlename'    ,
-                    'lastname' => $user->lastName,
+//                    'lastname' => $user->lastName,
 //                    'gender' => $user_profile->gender,
                     'email' => $user->emailAddress,
 //                    'date_of_birth' => $user_profile->birthDay . $user_profile->birthMonth . $user_profile->birthYear,
@@ -184,7 +121,7 @@ class User extends CI_Controller {
                 $this->load->view('common/footer');
             }
         } elseif (NULL != $_POST) {
-            //echo'<pre>';print_r($_POST);echo'</pre>';
+            //echo json_encode($_POST);exit;
             //if loggedin through social media using facebook
             if (isset($_POST['socialMediaLogin']) && (true == $_POST['socialMediaLogin']) && ('connected' == $_POST['status'])) {
 
@@ -231,17 +168,62 @@ class User extends CI_Controller {
                                 'updated_by' => '1',
                             );
 
-                            $this->db->insert('social_media_logins', $queryInsertSocialMediaLogin);
-                        } 
+                            if ($this->db->insert('social_media_logins', $queryInsertSocialMediaLogin)) {
+                                $socialMediaInsertId = $this->db->insert_id();
+                            }
 
-                        $reponceData = array(
-                            'Success' => 'Login Successful using Facebook. Welcome to ConnectKarma!',
-                            'baseURL' => base_url() . 'index.php/',
-                            'controller' => 'user',
-                            'action' => 'facebookLogin'
-                        );
-                        echo json_encode($reponceData);
-                        exit;
+                            //Insert data in user_registrations on login using LinkedIn
+                            if (false != $socialMediaInsertId) {
+                                $queryInsertUserRegistrations = array(
+                                    'social_media_login_id' => $socialMediaInsertId,
+                                    'name' => $_POST['name'],
+                                    //                                'password'  ,
+                                    //                    'firstname' => $user->firstName,
+                                    //                                'middlename'    ,
+                                    //                    'lastname' => $user->lastName,
+                                    //                    'gender' => $user_profile->gender,
+                                    'email' => $_POST['email'],
+                                    //                    'date_of_birth' => $user_profile->birthDay . $user_profile->birthMonth . $user_profile->birthYear,
+                                    //                    'age' => $user_profile->age,
+                                    //                    'contact_no' => $user_profile->phone,
+                                    //'image' => $_POST['url'],
+                                    //                                'documents' ,
+                                    //                                'business_category_ids' ,
+                                    //                                'email_verification_code'   ,
+                                    //                                'email_active_status' => $user_profile->emailVerified,
+                                    'created_by' => '1',
+                                    'created_on' => 'now()',
+                                    'updated_by' => '1'
+                                );
+                                if ($this->db->insert('user_registrations', $queryInsertUserRegistrations)) {
+                                    $reponceData = array(
+                                        'Success' => 'Login Successful using Facebook. Welcome to ConnectKarma!',
+                                        'baseURL' => base_url() . 'index.php/',
+                                        'controller' => 'user',
+                                        'action' => 'facebookLogin'
+                                    );
+                                    echo json_encode($reponceData);
+                                    exit;
+                                } else {
+                                    $reponceData = array(
+                                        'Error' => 'Unable to insert user data!',
+                                        'baseURL' => base_url() . 'index.php/',
+                                        'controller' => 'user'
+                                    );
+                                    echo json_encode($reponceData);
+                                    exit;
+                                }
+                            }
+                        } else {
+                            $reponceData = array(
+                                'Success' => 'Login Successful using Facebook. Welcome to ConnectKarma!',
+                                'baseURL' => base_url() . 'index.php/',
+                                'controller' => 'user',
+                                'action' => 'facebookLogin'
+                            );
+                            echo json_encode($reponceData);
+                            exit;
+                        }
                     }
                 }
             } else {
@@ -262,7 +244,7 @@ class User extends CI_Controller {
                     $arraySessionData = array(
                         'social_login_status' => '',
                         'session_userId' => $queryRowArray['id'],
-                        'session_userName' => $queryRowArray['firstname'],
+                        'session_userName' => $queryRowArray['name'],
                         'session_userDocument' => $queryRowArray['documents']
                     );
                     $this->session->sess_expiration = '900';
@@ -285,19 +267,75 @@ class User extends CI_Controller {
         }
     }
 
-    public function checkEmailAddressExists() {
+    function getAuthorizationCode() {
+        $params = array('response_type' => 'code',
+            'client_id' => API_KEY,
+            'scope' => SCOPE,
+            'state' => uniqid('', true), // unique long string
+            'redirect_uri' => REDIRECT_URI,
+        );
+        // Authentication request
+        $url = 'https://www.linkedin.com/uas/oauth2/authorization?' . http_build_query($params);
 
-        $arrWhere = array('email' => $_POST['email']);
-        $queryResult = $this->db->select('*')->from('user_registrations')->where($arrWhere)->get()->num_rows();
-        echo json_encode($queryResult);
+        // Needed to identify request when it returns to us
+        $_SESSION['state'] = $params['state'];
+        // Redirect user to authenticate
+        header("Location: $url");
         exit;
     }
 
-    public function register($data = null) {
+    function getAccessToken() {
+
+        $params = array('grant_type' => 'authorization_code',
+            'client_id' => API_KEY,
+            'client_secret' => API_SECRET,
+            'code' => $_GET['code'],
+            'redirect_uri' => REDIRECT_URI,
+        );
+
+        // Access Token request
+        $url = 'https://www.linkedin.com/uas/oauth2/accessToken?' . http_build_query($params);
+
+        // Tell streams to make a POST request
+        $context = stream_context_create(
+                array('http' =>
+                    array('method' => 'POST',
+                    )
+                )
+        );
+        // Retrieve access token information
+        $response = file_get_contents($url, false, $context);
+        // Native PHP object, please
+        $token = json_decode($response);
+        // Store access token and expiration time
+        $_SESSION['access_token'] = $token->access_token; // guard this! 
+        $_SESSION['expires_in'] = $token->expires_in; // relative time (in seconds)
+        $_SESSION['expires_at'] = time() + $_SESSION['expires_in']; // absolute time
+
+        return true;
+    }
+
+    function fetch($method, $resource, $body = '') {
+
+        $params = array('oauth2_access_token' => $_SESSION['access_token'],
+            'format' => 'json',
+        );
+        $url = 'https://www.linkedin.com' . $resource . '?' . http_build_query($params);
+        $context = stream_context_create(
+                array('http' =>
+                    array('method' => $method,
+                    )
+                )
+        );
+        $response = file_get_contents($url, false, $context);
+        return json_decode($response);
+    }
+
+    function register($data = null) {
 
         if (NULL == $_POST) {
 
-            $arrCategories['groups'] = $this->db->select('id, category_name')->from('business_categories')->get()->result_array();
+            $arrCategories['groups'] = $this->db->select('id, group_name')->from('user_groups')->get()->result_array();
             $this->load->view('common/header');
             $this->load->view('home/register', $arrCategories);
             $this->load->view('common/footer');
@@ -309,7 +347,7 @@ class User extends CI_Controller {
 
             //echo'<pre>';print_r($_POST);echo'</pre>';exit;
             $data = array(
-                'firstname' => $_POST['firstname'],
+                'name' => $_POST['name'],
                 'email' => $_POST['email'],
                 'password' => md5($_POST['password']),
                 'business_category_ids' => $_POST['categories'],
@@ -357,7 +395,7 @@ class User extends CI_Controller {
             $arraySessionData = array(
                 'social_login_status' => '',
                 'session_userId' => $userId,
-                'session_userName' => $_POST['firstname']
+                'session_userName' => $_POST['name']
                     //'session_userDocument' => $target_dir . '/' . $_FILES['userfile']['name']
             );
             //$this->session->sess_expiration = '900';
@@ -370,6 +408,7 @@ class User extends CI_Controller {
             $this->load->view('user/user', $MSG);
             $this->load->view('common/footer');
         } else {
+
             if (true == $this->session->userdata('session_userId') || true == $this->session->userdata('social_login_status')) {
 
                 //redirect to profile page
@@ -382,7 +421,15 @@ class User extends CI_Controller {
         }
     }
 
-    public function verify($verificationText = NULL) {
+    function checkEmailAddressExists() {
+
+        $arrWhere = array('email' => $_POST['email']);
+        $queryResult = $this->db->select('*')->from('user_registrations')->where($arrWhere)->get()->num_rows();
+        echo json_encode($queryResult);
+        exit;
+    }
+
+    function verify($verificationText = NULL) {
 
         $noRecords = $this->UserModel->verifyEmailAddress($verificationText);
         if ($noRecords > 0) {
@@ -402,13 +449,13 @@ class User extends CI_Controller {
         }
     }
 
-    public function sendVerificationEmail($userEmail, $verificationCode) {
+    function sendVerificationEmail($userEmail, $verificationCode) {
 
         $this->load->model('EmailModel');
         $this->EmailModel->sendVerificatinEmail($userEmail, $verificationCode);
     }
 
-    public function Logout() {
+    function Logout() {
 
         $arraySessionData = array(
             'social_login_status' => '',
@@ -423,46 +470,83 @@ class User extends CI_Controller {
         $this->load->view('common/footer');
     }
 
-    public function forgotPassword() {
-        
+    function forgotPassword() {
+
+        if (true == $_POST['new_password'] && false != $_POST['confirm_password'] && $strConfirmationCode == $_POST['confirmation_code'] && NULL != $_POST['userId']) {
+
+            $arrWhere = array(
+                'id' => $_POST['userId'],
+                'email_verification_code' => $strConfirmationCode
+            );
+            $dataUpdate = array(
+                'password' => md5($_POST['new_password']),
+            );
+            $this->db->where($arrWhere);
+
+            if (true == $this->db->update('user_registrations', $dataUpdate)) {
+                $reponceData = array(
+                    'Success' => 'Your password changed Successfully!',
+                    'baseURL' => base_url() . 'index.php/',
+                    'controller' => 'user'
+                );
+                echo json_encode($reponceData);
+                exit;
+            } else {
+                $reponceData = array(
+                    'Error' => 'Unable to update your Password!',
+                    'baseURL' => base_url() . 'index.php/',
+                    'controller' => 'user'
+                );
+                echo json_encode($reponceData);
+                exit;
+            };
+        } else {
+            $reponceData = array(
+                'Error' => 'Password reset Filure!',
+                'baseURL' => base_url() . 'index.php/',
+                'controller' => 'user'
+            );
+            echo json_encode($reponceData);
+            exit;
+        }
     }
 
-    public function userDetails() {
+    function userDetails() {
 
         $this->load->view('common/header');
         $this->load->view('user/user');
         $this->load->view('common/footer');
     }
 
-    public function dashboard() {
+    function dashboard() {
 
         $this->load->view('common/header');
         $this->load->view('user/profile');
         $this->load->view('common/footer');
     }
 
-    public function emails() {
+    function emails() {
 
         $this->load->view('common/header');
         $this->load->view('home/emails');
         $this->load->view('common/footer');
     }
 
-    public function feedback() {
+    function feedback() {
 
         $this->load->view('common/header');
         $this->load->view('home/feedback');
         $this->load->view('common/footer');
     }
 
-    public function knowledgeHub() {
+    function knowledgeHub() {
 
         $this->load->view('common/header');
         $this->load->view('home/knowledge_hub');
         $this->load->view('common/footer');
     }
 
-    public function facebookLogin() {
+    function facebookLogin() {
 
         $MSG['Success'] = 'Login Successful using Facebook. Welcome to ConnectKarma!';
 
@@ -471,7 +555,7 @@ class User extends CI_Controller {
         $this->load->view('common/footer');
     }
 
-    public function linkedInLogin() {
+    function linkedInLogin() {
 
         $MSG['Success'] = 'Login Successful using LinkedIn. Welcome to ConnectKarma!';
 
@@ -480,10 +564,11 @@ class User extends CI_Controller {
         $this->load->view('common/footer');
     }
 
-    public function twitterLogin() {
+    function twitterLogin() {
 
         $reponceData = 1;
-        echo json_encode($reponceData);exit;
+        echo json_encode($reponceData);
+        exit;
     }
 
 }

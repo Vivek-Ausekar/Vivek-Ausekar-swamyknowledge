@@ -6,6 +6,25 @@
  */
 
 //facebook API
+//window.fbAsyncInit = function () {
+//    FB.init({
+//        appId: '1740937489503955',
+//        xfbml: true,
+//        version: 'v2.8'
+//    });
+//};
+//
+//(function (d, s, id) {
+//    var js, fjs = d.getElementsByTagName(s)[0];
+//    if (d.getElementById(id)) {
+//        return;
+//    }
+//    js = d.createElement(s);
+//    js.id = id;
+//    js.src = "//connect.facebook.net/en_US/sdk.js";
+//    fjs.parentNode.insertBefore(js, fjs);
+//}(document, 'script', 'facebook-jssdk'));
+
 $('.fb').click(function () {
 
     //alert('logging into connectkarma using facebook');
@@ -32,9 +51,8 @@ $('.fb').click(function () {
 
         FB.init({
             appId: '1740937489503955',
-            cookie: true, // enable cookies to allow the server to access the session
-            xfbml: true, // parse social plugins on this page
-            version: 'v2.5' // use graph api version 2.5
+            xfbml: true,
+            version: 'v2.8'
         });
 
         // Now that we've initialized the JavaScript SDK, we call 
@@ -66,7 +84,7 @@ $('.fb').click(function () {
         if (response.status === 'connected') {
             var accessToken = response.authResponse.accessToken;
             var status = response.status;
-            //console.log(accessToken, status);
+            console.log(response);
             // Logged into your app and Facebook.
             testAPI(accessToken, status);
         } else if (response.status === 'not_authorized') {
@@ -85,7 +103,10 @@ $('.fb').click(function () {
 
             var loginStatus = 0;
             FB.login(function (response) {
-                console.log(response);
+                //console.log(response);
+                if(response.status  == "connected") {
+                    testAPI(response.authResponse.accessToken, response.status)
+                }
             }, {scope: 'public_profile,email'});
         }
     }
@@ -105,20 +126,23 @@ $('.fb').click(function () {
     function testAPI(accessToken, status) {
 
         //console.log('Welcome!  Fetching your information.... ');
-        FB.api('/me', {fields: 'id,name,first_name,last_name,email,gender'}, function (response) {
+        FB.api('/me', {fields: 'id,name,first_name,last_name,email'}, function (response) {
 
-            //alert(response.name);
-            console.log(response);
-            console.log('Successful login for: ' + response.name);
+            FB.api("/me/picture", function (response) {
+                  if (response && !response.error) {
+                    //console.log(response.data);
+                  }
+                }
+            );
 
             $.ajax({
-                
+
                 method: "POST",
                 dataType: "JSON",
                 url: "http://localhost/ckfirst/index.php/User/",
-                data: {socialMediaLogin: true, socialMediaLoginName: 'facebook', id: response.id, name: response.name, first_name: response.first_name, last_name: response.last_name, email: response.email, gender: response.gender, accessToken: accessToken, status: status},
+                data: {socialMediaLogin: true, socialMediaLoginName: 'facebook', id: response.id, name: response.name, first_name: response.first_name, last_name: response.last_name, email: response.email, gender: response.gender, image: response.data, accessToken: accessToken, status: status},
             }).done(function (data) {
-
+                //console.log(data);
                 var URL = data['baseURL'] + data['controller'] + '/' + data['action'];
                 window.location = URL;
             });
@@ -129,7 +153,7 @@ $('.fb').click(function () {
 
 //twitter API
 $('.tw').click(function () {
-    
+
 //
 //    alert('twitter login');
 ////        $.ajax({
@@ -179,5 +203,5 @@ $('.tw').click(function () {
 
 //google API
 $('.social_google').click(function () {
-    alert('google login');
+    //alert('google login');
 });

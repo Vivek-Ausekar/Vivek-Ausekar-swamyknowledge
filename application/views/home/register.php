@@ -24,16 +24,16 @@
                     </div>
 
                     <form method="POST" id="register" enctype="multipart/form-data">
-                        <div class="firstname"><input id="firstname" value="" type="text" name="firstname" placeholder="Enter your user name" required></div>
+                        <div class="firstname"><input id="firstname" value="" type="text" name="name" placeholder="Enter your name" required></div>
 
-                        <div class="firstname"><input id="email" value="" type="email" name="email" placeholder="Enter your Email" required></div>
+                        <div class="firstname"><input id="email" value="" type="email" name="email" placeholder="Enter your email address" required></div>
                         <div class="div_MSG_Email_ERROR"><br><div id="MSG_Email_ERROR"></div></div>
 
-                        <div class="firstname"><input id="password" value="" type="password" name="password" placeholder="Enter your user password" required></div>
+                        <div class="firstname"><input id="password" value="" type="password" name="password" placeholder="Enter your password" required></div>
                         <div class="div_MSG_Password_ERROR"><br><div id="MSG_Password_ERROR"></div></div>
                         <div class="div_MSG_Pass_ERROR"><br><div id="MSG_Pass_ERROR"></div></div>
 
-                        <div class="firstname"><input id="repassword" value="" type="password" name="password" placeholder="Re-enter your user password" required></div>
+                        <div class="firstname"><input id="repassword" value="" type="password" name="password" placeholder="Re-enter your password" required></div>
                         <div class="div_MSG_Passwordchk_ERROR"><br><div id="MSG_Passwordchk_ERROR"></div></div>
                         
                         <div class="firstname scroll">
@@ -42,11 +42,11 @@
                             <?php foreach($groups as $key => $group) {
                                 if($key%2   == 0) {?>
                                     <div class="firstname_left" id="evenCategory">
-                                        <span class="firstname_left_span"><input type="checkbox" value="<?php echo $group['id'];?>" class="check_box"/><?php echo $group['category_name'];?></span>                                            
+                                        <span class="firstname_left_span"><input type="checkbox" value="<?php echo $group['id'];?>" class="check_box"/><?php echo $group['group_name'];?></span>                                            
 
                                 <?php } else {?>
                                     <div class="firstname_left" id="oddCategory">
-                                        <span class="firstname_left_span"><input type="checkbox" value="<?php echo $group['id'];?>" class="check_box"/><?php echo $group['category_name'];?></span>
+                                        <span class="firstname_left_span"><input type="checkbox" value="<?php echo $group['id'];?>" class="check_box"/><?php echo $group['group_name'];?></span>
 
                                 <?php }?>
                                     </div>

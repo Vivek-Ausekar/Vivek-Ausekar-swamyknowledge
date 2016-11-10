@@ -33,10 +33,10 @@
 
                     <form method="POST">
 
-                        <div class="firstname"><input type="text" id="email" name="email_id" placeholder="Enter your email id" required></div>
+                        <div class="firstname"><input type="text" id="email" name="email_id" placeholder="Enter your email address" required></div>
                         <div class="div_MSG_Email_ERROR"><br><div id="MSG_Email_ERROR"></div></div>
                         
-                        <div class="firstname"><input type="password" name="password" placeholder="Enter your user password" required></div>
+                        <div class="firstname"><input type="password" name="password" placeholder="Enter your password" required></div>
                         <div class="btn_login"><button type="submit" name="" value="" formaction="<?php echo base_url('index.php/User/index');?>">Login</button></div>
                         
                         <div class="forgot"><a href="javascript:void(0);">Lost your Password?</a></div>
@@ -99,7 +99,7 @@
     
     //linkedin API
     $('.lin').click(function () {
-        alert('linkedin login');
+        //alert('linkedin login');
         //    var response_type  = 'code';
         //    var client_id      = '78un9sant5o14b';
         //    var redirect_uri   = 'http://localhost/ckfirst';

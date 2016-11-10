@@ -103,11 +103,11 @@ class HAuth extends CI_Controller {
                             //Insert data in user_registrations on login using twitter
                             $queryInsertUserRegistrations = array(
                                 'social_media_login_id' => $socialMediaInsertId,
-                                'username' => $user_profile->displayName,
+                                'name' => $user_profile->displayName,
 //                                'password'  ,
-                                'firstname' => $user_profile->firstName,
+//                                'firstname' => $user_profile->firstName,
 //                                'middlename'    ,
-                                'lastname' => $user_profile->lastName,
+//                                'lastname' => $user_profile->lastName,
                                 'gender' => $user_profile->gender,
                                 'email' => $user_profile->email,
                                 'date_of_birth' => $user_profile->birthDay . $user_profile->birthMonth . $user_profile->birthYear,
